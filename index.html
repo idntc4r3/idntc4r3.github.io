@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Сбер Сканер Подписок</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#06100a;--bg2:#0a1910;--panel:rgba(255,255,255,.045);--panel2:rgba(255,255,255,.075);
+      --text:#f6faf7;--muted:#93a69a;--line:rgba(255,255,255,.09);--green:#21a038;--green2:#44c35c;
+      --greenSoft:rgba(33,160,56,.15);--orange:#ff8a2a;--red:#ff5b68;--blue:#48a7ff;--shadow:0 24px 70px rgba(0,0,0,.38);
+      --radius:24px;--radius2:16px;--ease:cubic-bezier(.2,.8,.2,1)
+    }
+    body.light{--bg:#eef4ef;--bg2:#f7faf7;--panel:rgba(255,255,255,.72);--panel2:#fff;--text:#132018;--muted:#64736a;--line:rgba(18,48,27,.1);--shadow:0 22px 60px rgba(26,65,37,.12)}
+    html{scroll-behavior:smooth}
+    body{font-family:Inter,system-ui,sans-serif;background:
+      radial-gradient(circle at 10% 10%,rgba(33,160,56,.16),transparent 28%),
+      radial-gradient(circle at 88% 22%,rgba(55,180,100,.1),transparent 24%),var(--bg);color:var(--text);min-height:100vh;transition:.35s background,.35s color;overflow-x:hidden}
+    button,input{font:inherit}.hidden{display:none!important}.muted{color:var(--muted)}
+    .app-shell{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
+    .sidebar{position:sticky;top:0;height:100vh;padding:24px 18px;border-right:1px solid var(--line);background:rgba(4,15,8,.72);backdrop-filter:blur(22px);z-index:50}
+    body.light .sidebar{background:rgba(245,250,246,.8)}
+    .brand{display:flex;align-items:center;gap:12px;padding:8px 10px 28px;font-weight:900;font-size:1.15rem}
+    .brand-icon{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--green),#6bd77d);display:grid;place-items:center;color:white;box-shadow:0 10px 24px rgba(33,160,56,.32)}
+    .menu{display:flex;flex-direction:column;gap:8px}.menu button{border:0;background:transparent;color:var(--muted);display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:14px;cursor:pointer;text-align:left;transition:.25s var(--ease)}
+    .menu button:hover,.menu button.active{background:var(--greenSoft);color:var(--text);transform:translateX(3px)}.menu button.active i{color:var(--green)}
+    .sidebar-bottom{position:absolute;left:18px;right:18px;bottom:20px}.ai-status{padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+    .status-dot{width:9px;height:9px;border-radius:50%;background:var(--orange);display:inline-block;margin-right:8px;box-shadow:0 0 14px currentColor}.status-dot.ok{background:var(--green)}
+    .main{min-width:0}.topbar{position:sticky;top:0;z-index:40;height:74px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;border-bottom:1px solid var(--line);background:rgba(6,16,10,.72);backdrop-filter:blur(22px)}body.light .topbar{background:rgba(238,244,239,.8)}
+    .topbar-actions{display:flex;gap:10px;align-items:center}.icon-btn,.btn{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:14px;cursor:pointer;transition:.25s var(--ease)}
+    .icon-btn{width:44px;height:44px}.icon-btn:hover,.btn:hover{transform:translateY(-2px);border-color:rgba(33,160,56,.5)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:12px 18px;font-weight:700}.btn.primary{background:linear-gradient(135deg,var(--green),#2eba48);border-color:transparent;color:#fff;box-shadow:0 12px 28px rgba(33,160,56,.22)}.btn.ghost{background:transparent}.btn.small{padding:9px 13px;font-size:.86rem}
+    .mobile-menu{display:none}.content{padding:32px;max-width:1500px;margin:auto}.section{scroll-margin-top:92px;margin-bottom:34px}.view{animation:viewIn .45s var(--ease)}@keyframes viewIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+    .hero{display:grid;grid-template-columns:1.25fr .75fr;gap:24px;align-items:stretch}.hero-card,.card{border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(16px);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .hero-card{padding:42px;position:relative;overflow:hidden}.hero-card::after{content:"";position:absolute;width=320px;height=320px;border-radius=50%;right=-120px;top=-120px;background=radial-gradient(circle,rgba(33,160,56,.34),transparent 66%);animation=float 7s ease-in-out infinite alternate}@keyframes float{to{transform:translate(-28px,35px) scale(1.08)}}
+    .eyebrow{color:var(--green2);font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.16em}.hero h1{font-size:clamp(2.4rem,4.6vw,5.2rem);line-height:.98;margin:16px 0 20px;letter-spacing:-.055em;max-width:900px}.hero p{color:var(--muted);max-width:760px;font-size:1.05rem}.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}.hero-side{padding:28px;display:flex;flex-direction:column;justify-content:space-between}.guard-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 11px;border-radius:999px;background:var(--greenSoft);color:var(--green2);font-size:.78rem;font-weight:800;width:max-content}.hero-number{font-size:3.3rem;font-weight:900;letter-spacing:-.05em;margin:18px 0 6px}
+    .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:22px 0}.kpi{padding:18px;border:1px solid var(--line);border-radius:18px;background:var(--panel);transition:.25s var(--ease)}.kpi:hover{transform:translateY(-3px);background:var(--panel2)}.kpi .label{color:var(--muted);font-size:.78rem}.kpi .value{font-size:1.55rem;font-weight:900;margin-top:7px}.kpi .delta{font-size:.75rem;color:var(--green2);margin-top:5px}
+    .workspace{display:grid;grid-template-columns:380px 1fr;gap:18px}.card{padding:22px}.card-title{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px}.card-title h3{font-size:1.05rem}.card-title i{color:var(--green)}
+    .dropzone{min-height:250px;border:1.5px dashed rgba(65,196,91,.45);border-radius:20px;background:linear-gradient(180deg,rgba(33,160,56,.06),rgba(33,160,56,.015));display:grid;place-items:center;text-align:center;padding:24px;position:relative;transition:.25s var(--ease);overflow:hidden}.dropzone:hover,.dropzone.drag{border-color:var(--green);transform:translateY(-2px);background:rgba(33,160,56,.08)}.dropzone input{position:absolute;inset:0;opacity:0;cursor:pointer}.upload-icon{width:68px;height:68px;border-radius:20px;background:var(--greenSoft);display:grid;place-items:center;color:var(--green2);font-size:1.65rem;margin:0 auto 15px}.file-types{font-size:.75rem;color:var(--muted);margin-top:8px}
+    .progress-wrap{margin-top:14px}.progress{height:7px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}.progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--green),#65da78);transition:.35s width}.progress-text{font-size:.78rem;color:var(--muted);margin-top:8px;min-height:18px}
+    .settings{display:grid;gap:12px;margin-top:14px}.field label{display:block;color:var(--muted);font-size:.75rem;margin-bottom:7px}.field input{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:13px;background:var(--panel);color:var(--text);outline:none}.field input:focus{border-color:var(--green)}
+    .trust-box{margin-top:14px;padding:14px;border-radius:15px;border:1px solid rgba(33,160,56,.22);background:var(--greenSoft);font-size:.79rem;color:var(--muted)}.trust-box strong{color:var(--text)}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap}.tab{border:1px solid var(--line);background:transparent;color:var(--muted);padding:9px 12px;border-radius:12px;cursor:pointer}.tab.active{background:var(--greenSoft);color:var(--text);border-color:rgba(33,160,56,.28)}
+    .results-empty{min-height:320px;display:grid;place-items:center;text-align:center;color:var(--muted)}.results-empty i{font-size:2.7rem;display:block;margin-bottom:14px;color:var(--green)}
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:16px}table{width:100%;border-collapse:collapse;min-width:780px}th,td{padding:13px 14px;border-bottom:1px solid var(--line);text-align:left;font-size:.84rem}th{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;background:rgba(255,255,255,.025);position:sticky;top:0}tr:hover td{background:rgba(255,255,255,.025)}.merchant{font-weight:800}.submeta{font-size:.72rem;color:var(--muted);margin-top:3px}.confidence{display:flex;align-items:center;gap:8px}.confbar{width:74px;height:6px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden}.confbar span{display:block;height:100%;background:var(--green)}.pill{display:inline-flex;align-items:center;gap=6px;padding:5px 9px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-size:.7rem}.pill.ai{background:rgba(72,167,255,.1);color:#8ac8ff}.pill.local{background:var(--greenSoft);color:#78df8a}
+    .row-actions{display:flex;gap:6px}.mini{width:34px;height:34px;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:10px;cursor:pointer}.mini:hover{border-color:var(--green)}
+    .charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.chart-card{min-height:340px}.chart-box{height:270px;position:relative}.chart-note{font-size:.74rem;color:var(--muted);margin-top:10px}
+    .insights{display:grid;grid-template-columns:1fr 1fr;gap:16px}.insight-list{display:grid;gap:10px}.insight{padding:14px;border:1px solid var(--line);background:var(--panel);border-radius:15px}.insight strong{display:block;margin-bottom:4px}.insight span{font-size:.8rem;color:var(--muted)}
+    .timeline{display:flex;align-items:flex-end;gap:7px;height:120px;padding-top:12px}.timeline .bar{flex:1;min-width:6px;background:linear-gradient(180deg,#5ed272,var(--green));border-radius:8px 8px 2px 2px;opacity:.9;animation:grow .7s var(--ease) both}@keyframes grow{from{height:0!important}}
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.68);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}.modal.open{display:flex}.modal-card{width:min(720px,100%);max-height:85vh;overflow:auto;border:1px solid var(--line);background:var(--bg2);border-radius:24px;padding:24px;box-shadow:var(--shadow);animation:pop .25s var(--ease)}@keyframes pop{from{opacity:0;transform:scale(.96) translateY(10px)}to{opacity:1;transform:none}}.modal-head{display:flex;justify-content:space-between;gap:20px;align-items:start;margin-bottom:18px}.evidence-item{padding:12px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:100px 110px 1fr;gap:12px;font-size:.82rem}.codebox{white-space:pre-wrap;padding:15px;border-radius:14px;background:rgba(0,0,0,.22);border:1px solid var(--line);font:13px/1.6 ui-monospace,SFMono-Regular,monospace}
+    .toast-wrap{position:fixed;right:22px;top:92px;z-index:200;display:grid;gap:10px}.toast{min-width:290px;max-width:390px;padding:13px 15px;border:1px solid var(--line);background:var(--bg2);border-radius:14px;box-shadow:var(--shadow);animation:toastIn .3s var(--ease)}@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+    .scanline{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--green2),transparent);top:0;opacity:0}.dropzone.scanning .scanline{opacity:1;animation:scan 1.6s linear infinite}@keyframes scan{to{top:100%}}
+    @media(max-width:1100px){.app-shell{grid-template-columns:82px 1fr}.sidebar{padding:20px 12px}.brand span,.menu button span,.sidebar-bottom{display:none}.brand{justify-content:center}.menu button{justify-content:center}.workspace{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:760px){.app-shell{display:block}.sidebar{display:none}.topbar{padding:0 12px}.topbar-actions{gap:6px}.topbar-actions .btn{padding:9px 10px;font-size:.76rem}.mobile-menu{display:block}.content{padding:12px}.hero{grid-template-columns:1fr}.hero-card{padding:22px}.hero h1{font-size:2.45rem}.kpis{grid-template-columns:repeat(2,1fr);gap:9px}.kpi{padding:14px}.charts,.insights{grid-template-columns:1fr}.topbar .page-label{display:none}.evidence-item{grid-template-columns:1fr}.hero-side{min-height:220px}.card-title{align-items:flex-start;flex-wrap:wrap}.card-title>div:last-child{width:100%;overflow:auto}.tabs{white-space:nowrap}.settings{grid-template-columns:1fr}.settings .btn{width:100%}.modal-card{width:calc(100% - 24px);padding:20px}.modal-head h2{font-size:1.25rem}.codebox{font-size:.8rem;line-height:1.5}.toast{min-width:0;width:calc(100vw - 32px)}}
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-icon"><i class="fa-solid fa-radar"></i></div><span>Сбер Сканер</span></div>
+    <nav class="menu">
+      <button class="active" data-target="overview"><i class="fa-solid fa-grid-2"></i><span>Обзор</span></button>
+      <button data-target="scanner"><i class="fa-solid fa-file-shield"></i><span>Сканер файлов</span></button>
+      <button data-target="subscriptions"><i class="fa-solid fa-repeat"></i><span>Подписки</span></button>
+      <button data-target="analytics"><i class="fa-solid fa-chart-line"></i><span>Аналитика</span></button>
+    </nav>
+    <div class="sidebar-bottom"><div class="ai-status"><div><span id="aiDot" class="status-dot"></span><strong id="aiStatus">Проверка данных…</strong></div><div id="aiModel" class="muted" style="font-size:.72rem;margin-top:5px">—</div></div></div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:12px"><button class="icon-btn mobile-menu" id="mobileMenu"><i class="fa-solid fa-bars"></i></button><div class="page-label"><strong>Финансовая аналитика</strong><div class="muted" style="font-size:.72rem">Подписки только из доказанных транзакций</div></div></div>
+      <div class="topbar-actions"><button class="icon-btn" id="themeBtn" title="Тема"><i class="fa-solid fa-moon"></i></button><button class="btn primary small" data-go="scanner"><i class="fa-solid fa-plus"></i> Новый анализ</button></div>
+    </header>
+
+    <div class="content">
+      <section id="overview" class="section view">
+        <div class="hero">
+          <div class="hero-card">
+            <div class="eyebrow">Детерминированная проверка</div>
+            <h1>Подписки без <span style="color:var(--green2)">ошибок</span></h1>
+            <p>Сканер читает реальные строки PDF/CSV/XLSX и ищет повторяющиеся платежи только среди операций из выписки.</p>
+            <div class="hero-actions"><button class="btn primary" data-go="scanner"><i class="fa-solid fa-wand-magic-sparkles"></i> Загрузить выписку</button><button class="btn ghost" id="demoBtn"><i class="fa-solid fa-play"></i> Демо с реальными строками</button></div>
+          </div>
+          <div class="hero-card hero-side">
+            <span class="guard-badge"><i class="fa-solid fa-shield-check"></i> Evidence Guard включён</span>
+            <div><div class="muted">Найдено по текущему анализу</div><div class="hero-number" id="heroCount">0</div><div class="muted">подписок / регулярных платежей</div></div>
+            <div class="muted" style="font-size:.76rem"><i class="fa-solid fa-lock"></i> Данные обрабатываются безопасно и остаются в рамках анализа.</div>
+          </div>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="label">В месяц</div><div class="value" id="kpiMonthly">0 ₽</div><div class="delta">только подтверждённые</div></div>
+          <div class="kpi"><div class="label">В год</div><div class="value" id="kpiYearly">0 ₽</div><div class="delta">прогноз ×12</div></div>
+          <div class="kpi"><div class="label">Кандидатов</div><div class="value" id="kpiCandidates">0</div><div class="delta">по повторяемости</div></div>
+          <div class="kpi"><div class="label">Средняя уверенность</div><div class="value" id="kpiConfidence">0%</div><div class="delta">по данным выписки</div></div>
+          <div class="kpi"><div class="label">Транзакций прочитано</div><div class="value" id="kpiTransactions">0</div><div class="delta">из файла</div></div>
+        </div>
+      </section>
+
+      <section id="scanner" class="section view">
+        <div class="workspace">
+          <div class="card">
+            <div class="card-title"><h3><i class="fa-solid fa-file-arrow-up"></i> Файл выписки</h3><span class="pill local">локальный парсинг</span></div>
+            <div class="dropzone" id="dropzone"><div class="scanline"></div><input id="fileInput" type="file" accept=".csv,.xls,.xlsx,.pdf"><div><div class="upload-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div><strong id="dropTitle">Перетащите файл или нажмите</strong><div class="file-types">PDF · CSV · XLS · XLSX</div><div class="muted" style="font-size:.78rem;margin-top:10px">Для PDF нужен текстовый слой. Скан-фото потребует OCR.</div></div></div>
+            <div class="progress-wrap hidden" id="progressWrap"><div class="progress"><span id="progressBar"></span></div><div class="progress-text" id="progressText"></div></div>
+             <div class="trust-box"><strong>Проверка по выписке.</strong> В результат попадают только кандидаты минимум с двумя реальными транзакциями.</div>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><div><h3><i class="fa-solid fa-magnifying-glass-chart"></i> Результат анализа</h3><div id="sourceInfo" class="muted" style="font-size:.74rem;margin-top:4px">Файл ещё не загружен</div></div><div style="display:flex;align-items:center;gap:10px"><div class="tabs"><button class="tab active" data-filter="all">Все</button><button class="tab" data-filter="over">Дороже 500 ₽</button></div><button class="btn ghost small" id="exportBtn"><i class="fa-solid fa-download"></i> Экспорт JSON</button></div></div>
+            <div id="resultsEmpty" class="results-empty"><div><i class="fa-solid fa-shield-halved"></i><strong>Здесь появятся только подтверждённые платежи</strong><p style="margin-top:8px">Никаких случайных Netflix, Spotify или других сервисов.</p></div></div>
+             <div id="resultsArea" class="hidden"><div class="table-wrap"><table><thead><tr><th>Подписка</th><th>Период</th><th>Цена, ₽/мес</th><th></th></tr></thead><tbody id="subsBody"></tbody></table></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="subscriptions" class="section view">
+        <div class="card">
+          <div class="card-title"><div><h3><i class="fa-solid fa-list-check"></i> Финансовое здоровье</h3><div class="muted" style="font-size:.74rem;margin-top:4px">Управление бюджетом и подписками</div></div></div>
+           <div class="card" style="margin-top:18px"><div class="card-title"><h3><i class="fa-solid fa-gauge-high"></i> Бюджет</h3></div><div class="settings"><div class="field"><label>Бюджет на подписки, ₽/мес</label><input id="budgetInput" type="number" value="1500" min="0"></div><button class="btn ghost" id="reanalyzeBtn"><i class="fa-solid fa-rotate"></i> Пересчитать</button></div><div style="display:flex;align-items:center;gap:20px;margin-top:22px"><div id="healthRing" style="width:110px;height:110px;border-radius:50%;display:grid;place-items:center;border:10px solid var(--green);font-size:1.65rem;font-weight:900;flex:none">—</div><div><strong id="healthTitle">Нет данных</strong><div id="healthText" class="muted" style="font-size:.82rem;margin-top:7px;max-width:320px">Оценка зависит от бюджета и суммы регулярных платежей.</div></div></div><div class="timeline" id="miniTimeline"></div><div id="budgetRecommendations" class="insight-list" style="margin-top:16px"></div></div>
+        </div>
+      </section>
+
+      <section id="analytics" class="section view">
+        <div class="charts">
+          <div class="card chart-card"><div class="card-title"><h3><i class="fa-solid fa-chart-pie"></i> Расходы по категориям</h3></div><div class="chart-box"><canvas id="categoryChart"></canvas></div><div class="chart-note">Круговая диаграмма строится по подтверждённым подпискам.</div></div>
+          <div class="card chart-card"><div class="card-title"><h3><i class="fa-solid fa-chart-column"></i> Самые дорогие подписки</h3></div><div class="chart-box"><canvas id="topChart"></canvas></div><div class="chart-note">Столбчатый график месячной стоимости.</div></div>
+          <div class="card chart-card"><div class="card-title"><h3><i class="fa-solid fa-chart-line"></i> Динамика по месяцам</h3></div><div class="chart-box"><canvas id="monthlyChart"></canvas></div><div class="chart-note">Фактическая сумма найденных recurring-транзакций по месяцам.</div></div>
+          <div class="card chart-card"><div class="card-title"><h3><i class="fa-solid fa-wave-square"></i> Периодичность</h3></div><div class="chart-box"><canvas id="cadenceChart"></canvas></div><div class="chart-note">Сколько подписок списывается еженедельно, ежемесячно и по другим циклам.</div></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<div class="modal" id="modal"><div class="modal-card"><div class="modal-head"><div><div class="eyebrow" id="modalEyebrow">Отмена подписки</div><h2 id="modalTitle" style="margin-top:6px">Подписка</h2></div><button class="icon-btn" id="modalClose"><i class="fa-solid fa-xmark"></i></button></div><div id="modalBody"></div></div></div>
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script type="module">
+  import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.mjs';
+
+  const state = { transactions: [], candidates: [], subscriptions: [], aiMode: 'local', fileName: '', filter: 'all', charts: {}, rawRows: [], cancelled: new Set(), pendingCancellation: '' };
+  const $ = s => document.querySelector(s); const $$ = s => [...document.querySelectorAll(s)];
+  const money = n => `${Math.abs(Math.round(Number(n || 0))).toLocaleString('ru-RU')} ₽`;
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+
+  function toast(text){const el=document.createElement('div');el.className='toast';el.innerHTML=`<i class="fa-solid fa-circle-check" style="color:var(--green);margin-right:8px"></i>${escapeHtml(text)}`;$('#toastWrap').appendChild(el);setTimeout(()=>el.remove(),3600)}
+  function escapeHtml(s=''){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+  function progress(p,text){$('#progressWrap').classList.remove('hidden');$('#progressBar').style.width=`${p}%`;$('#progressText').textContent=text;}
+  function finishProgress(){setTimeout(()=>$('#progressWrap').classList.add('hidden'),500)}
+
+  async function init(){
+    try{await fetch('/api/health');$('#aiStatus').textContent='Проверка данных';$('#aiModel').textContent='готово';$('#aiDot').classList.add('ok')}catch{$('#aiStatus').textContent='Локальный режим';$('#aiModel').textContent='готово'}
+    bindUI(); renderAll();
+  }
+
+  function bindUI(){
+    $$('.menu button').forEach(b=>b.onclick=()=>go(b.dataset.target));$$('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
+    $('#mobileMenu').onclick=()=>go('scanner');
+    $('#themeBtn').onclick=()=>{document.body.classList.toggle('light');$('#themeBtn i').className=document.body.classList.contains('light')?'fa-solid fa-sun':'fa-solid fa-moon';renderCharts()};
+    $('#fileInput').onchange=e=>e.target.files[0]&&handleFile(e.target.files[0]);
+    const dz=$('#dropzone');['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag')}));['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag')}));dz.addEventListener('drop',e=>e.dataTransfer.files[0]&&handleFile(e.dataTransfer.files[0]));
+    $('#demoBtn').onclick=loadDemo;$('#reanalyzeBtn').onclick=()=>state.transactions.length?renderAll():toast('Сначала загрузите файл');$('#budgetInput').oninput=()=>renderHealth();
+    $$('.tab').forEach(t=>t.onclick=()=>{$$('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');state.filter=t.dataset.filter;renderTable()});
+    $('#modalClose').onclick=closeModal;$('#modal').onclick=e=>e.target.id==='modal'&&closeModal();$('#exportBtn').onclick=exportJson;
+    document.addEventListener('click',e=>{const button=e.target.closest('[data-cancel]');if(button){e.preventDefault();e.stopPropagation();cancelSubscription(button.dataset.cancel);return}const bulk=e.target.closest('[data-bulk-cancel]');if(bulk){e.preventDefault();openBulkCancellation(bulk.dataset.bulkCancel.split(','));return}const confirm=e.target.closest('[data-confirm-cancel]');if(confirm&&confirm.querySelector('input')?.checked)confirmCancellation();const bulkConfirm=e.target.closest('[data-confirm-bulk]');if(bulkConfirm&&bulkConfirm.querySelector('input')?.checked)confirmBulkCancellation()});
+    document.addEventListener('change',e=>{if(e.target.id==='letterSent'&&e.target.checked)confirmCancellation()});
+  }
+  function go(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});$$('.menu button').forEach(b=>b.classList.toggle('active',b.dataset.target===id))}
+
+  async function handleFile(file){
+    state.fileName=file.name; state.transactions=[];state.candidates=[];state.subscriptions=[];state.cancelled.clear();renderAll();$('#dropzone').classList.add('scanning');$('#dropTitle').textContent=file.name;
+    try{
+      progress(8,'Читаю файл…'); const ext=file.name.split('.').pop().toLowerCase(); let tx=[];
+      if(ext==='csv') tx=await parseCsv(file); else if(['xls','xlsx'].includes(ext)) tx=await parseExcel(file); else if(ext==='pdf') tx=await parsePdf(file); else throw new Error('Неподдерживаемый формат');
+      progress(38,`Распознано строк транзакций: ${tx.length}`); state.transactions=dedupeTransactions(tx); if(state.transactions.length<2) throw new Error('Не удалось найти достаточно транзакций. Проверьте формат столбцов/текстовый слой PDF.');
+      await analyzeTransactions();
+    }catch(e){console.error(e);toast(e.message||'Ошибка анализа файла');$('#sourceInfo').textContent=`Ошибка: ${e.message}`}
+    finally{$('#dropzone').classList.remove('scanning');finishProgress()}
+  }
+
+  async function parseCsv(file){return new Promise((resolve,reject)=>Papa.parse(file,{skipEmptyLines:true,complete:r=>{try{resolve(normalizeMatrix(r.data))}catch(e){reject(e)}},error:reject}))}
+  async function parseExcel(file){const buf=await file.arrayBuffer();const wb=XLSX.read(buf,{type:'array',cellDates:true});let all=[];for(const name of wb.SheetNames){const matrix=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:false,defval:''});all.push(...normalizeMatrix(matrix))}return all}
+  async function parsePdf(file){const buf=await file.arrayBuffer();const pdf=await pdfjsLib.getDocument({data:buf}).promise;let lines=[];for(let p=1;p<=pdf.numPages;p++){progress(10+Math.round((p/pdf.numPages)*18),`PDF: страница ${p} из ${pdf.numPages}`);const page=await pdf.getPage(p);const content=await page.getTextContent();const groups=new Map();for(const item of content.items){const y=Math.round((item.transform?.[5]||0)/3)*3;if(!groups.has(y))groups.set(y,[]);groups.get(y).push({x:item.transform?.[4]||0,text:item.str})}const pageLines=[...groups.entries()].sort((a,b)=>b[0]-a[0]).map(([,items])=>items.sort((a,b)=>a.x-b.x).map(i=>i.text).join(' ').replace(/\s+/g,' ').trim()).filter(Boolean);lines.push(...pageLines)}return normalizePdfLines(lines)}
+
+  function normalizeMatrix(matrix){
+    const rows=(matrix||[]).map(r=>Array.isArray(r)?r.map(v=>String(v??'').trim()):[]).filter(r=>r.some(Boolean));if(!rows.length)return[];
+    let headerIndex=rows.slice(0,35).findIndex(r=>r.some(c=>/(дата|date)/i.test(c))&&r.some(c=>/(сумм|amount|дебет|debit|расход)/i.test(c)));
+    const hasHeader=headerIndex>=0;const header=hasHeader?rows[headerIndex].map(x=>x.toLowerCase()):[];
+    const idx=(patterns)=>header.findIndex(h=>patterns.some(re=>re.test(h)));
+    let dateI=idx([/дата/,/^date$/]); let amountI=idx([/сумм/,/amount/,/дебет/,/debit/,/расход/]); let descI=idx([/опис/,/назнач/,/детал/,/merchant/,/операц/,/description/,/получател/,/контрагент/]);
+    let creditI=idx([/кредит/,/credit/,/приход/]);let debitI=idx([/дебет/,/debit/,/расход/]);
+    const out=[];
+    for(let ri=hasHeader?headerIndex+1:0;ri<rows.length;ri++){
+      const r=rows[ri];let date=parseDate(r[dateI]||findDateCell(r)); if(!date)continue;
+      let amountRaw=amountI>=0?r[amountI]:findAmountCell(r);let amount=parseMoney(amountRaw);if(!Number.isFinite(amount)||amount===0)continue;
+      let debit=debitI>=0?parseMoney(r[debitI]):NaN;let credit=creditI>=0?parseMoney(r[creditI]):NaN;
+      let isExpense=Number.isFinite(debit)&&Math.abs(debit)>0?true:Number.isFinite(credit)&&Math.abs(credit)>0?false:amount<0?true:null;
+      let desc=descI>=0?r[descI]:r.filter((_,i)=>i!==dateI&&i!==amountI&&i!==creditI&&i!==debitI).join(' ');desc=cleanDescription(desc);
+      if(!desc||desc.length<2)continue; if(isExpense===false)continue;
+      out.push(makeTx(out.length,date,Math.abs(amount),desc,isExpense));
+    }
+    return out;
+  }
+  function normalizePdfLines(lines){const out=[];for(const line of lines){const dateMatch=line.match(/\b(\d{2}[.\/-]\d{2}[.\/-]\d{2,4}|\d{4}[.\/-]\d{2}[.\/-]\d{2})\b/);if(!dateMatch)continue;const date=parseDate(dateMatch[1]);if(!date)continue;const nums=[...line.matchAll(/[-−]?\d[\d\s.,]*\d|[-−]?\d/g)].map(m=>({raw:m[0],index:m.index})).filter(x=>x.index>(dateMatch.index+dateMatch[0].length));if(!nums.length)continue;let chosen=nums[nums.length-1];let amount=parseMoney(chosen.raw);if(!Number.isFinite(amount)||amount===0)continue;let desc=cleanDescription(line.slice(dateMatch.index+dateMatch[0].length,chosen.index));if(desc.length<2)continue;if(/зачислен|зарплат|пополнен|возврат|перевод от/i.test(desc))continue;out.push(makeTx(out.length,date,Math.abs(amount),desc,amount<0?true:null))}return out}
+  function makeTx(i,date,amount,description,isExpense){return {id:`tx_${i}_${date.toISOString().slice(0,10)}_${Math.round(amount*100)}`,date,amount:Number(amount.toFixed(2)),description,isExpense}}
+  function parseDate(v){if(v instanceof Date&&!isNaN(v))return v;const s=String(v||'').trim();let m=s.match(/^(\d{2})[.\/-](\d{2})[.\/-](\d{2,4})/);if(m){let y=+m[3];if(y<100)y+=2000;const d=new Date(y,+m[2]-1,+m[1]);return isNaN(d)?null:d}m=s.match(/^(\d{4})[.\/-](\d{2})[.\/-](\d{2})/);if(m){const d=new Date(+m[1],+m[2]-1,+m[3]);return isNaN(d)?null:d}return null}
+  function parseMoney(v){if(v==null)return NaN;let s=String(v).replace(/\u00a0/g,' ').replace(/[₽$€£]/g,'').trim().replace(/−/g,'-');const neg=/^-|\(.*\)/.test(s);s=s.replace(/[()]/g,'').replace(/\s/g,'');if(s.includes(',')&&s.includes('.')){if(s.lastIndexOf(',')>s.lastIndexOf('.'))s=s.replace(/\./g,'').replace(',','.');else s=s.replace(/,/g,'')}else if(s.includes(','))s=s.replace(',','.');const n=parseFloat(s.replace(/[^\d.-]/g,''));return Number.isFinite(n)?(neg?-Math.abs(n):n):NaN}
+  function findDateCell(r){return r.find(x=>/\b\d{2}[.\/-]\d{2}[.\/-]\d{2,4}\b|\b\d{4}[.\/-]\d{2}[.\/-]\d{2}\b/.test(x))||''}
+  function findAmountCell(r){const candidates=r.filter(x=>/[-−]?\d[\d\s.,]*\s*(₽|руб|RUB)?$/i.test(x));return candidates[candidates.length-1]||''}
+  function cleanDescription(s){return String(s||'').replace(/\s+/g,' ').replace(/[|]/g,' ').trim()}
+  function dedupeTransactions(tx){const seen=new Set();return tx.filter(t=>{const k=`${t.date.toISOString().slice(0,10)}|${t.amount}|${t.description.toLowerCase()}`;if(seen.has(k))return false;seen.add(k);return true}).sort((a,b)=>a.date-b.date)}
+
+  function merchantKey(desc){return desc.toUpperCase().normalize('NFKD').replace(/\b(POS|PURCHASE|PAYMENT|CARD|MOBILE|ONLINE|ECOM|E-COM|RUS|RU|MOSCOW|SPB)\b/g,' ').replace(/\d{3,}/g,' ').replace(/[^A-ZА-ЯЁ0-9]+/g,' ').replace(/\s+/g,' ').trim().slice(0,90)}
+  function trigrams(s){const p=`  ${s.toLowerCase()}  `,set=new Set();for(let i=0;i<p.length-2;i++)set.add(p.slice(i,i+3));return set}
+  function similarity(a,b){if(a===b)return 1;const A=trigrams(a),B=trigrams(b);let inter=0;A.forEach(x=>B.has(x)&&inter++);return (2*inter)/(A.size+B.size||1)}
+  function median(a){const s=[...a].sort((x,y)=>x-y),m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2}
+  function days(a,b){return Math.abs((b-a)/86400000)}
+  function cadenceFromIntervals(ints){if(!ints.length)return {label:'неизвестно',score:0};const m=median(ints);if(m>=5&&m<=9)return{label:'еженедельно',score:1};if(m>=12&&m<=16)return{label:'раз в 2 недели',score:.95};if(m>=25&&m<=35)return{label:'ежемесячно',score:1};if(m>=55&&m<=70)return{label:'раз в 2 месяца',score:.85};if(m>=80&&m<=100)return{label:'ежеквартально',score:.9};return{label:`≈ ${Math.round(m)} дн.`,score:Math.max(.25,1-Math.min(1,Math.abs(m-30)/45))}}
+  function likelyExpense(t){if(t.isExpense===true)return true;const d=t.description.toLowerCase();if(/зарплат|зачислен|пополнен|возврат|cashback|кэшбэк|перевод от|процент/i.test(d))return false;return true}
+
+  function buildCandidates(transactions){
+    const pool=transactions.filter(likelyExpense).slice(0,12000);const groups=[];
+    for(const t of pool){const key=merchantKey(t.description);if(key.length<2)continue;let best=null,bestScore=0;for(const g of groups){const amountRatio=Math.abs(t.amount-g.medAmount)/Math.max(t.amount,g.medAmount,1);if(amountRatio>.22)continue;const s=similarity(key,g.key);if(s>bestScore){bestScore=s;best=g}}if(best&&bestScore>=.72){best.items.push(t);best.medAmount=median(best.items.map(x=>x.amount));if(key.length<best.key.length)best.key=key}else groups.push({key,items:[t],medAmount:t.amount})
+    }
+    const candidates=[];let idx=0;
+    for(const g of groups){if(g.items.length<2)continue;const items=[...g.items].sort((a,b)=>a.date-b.date);const uniqueDates=[...new Map(items.map(x=>[x.date.toISOString().slice(0,10),x])).values()];if(uniqueDates.length<2)continue;const intervals=uniqueDates.slice(1).map((x,i)=>days(uniqueDates[i].date,x.date));const cadence=cadenceFromIntervals(intervals);const amounts=items.map(x=>x.amount);const med=median(amounts);const spread=Math.max(...amounts.map(x=>Math.abs(x-med)/Math.max(med,1)));const regularity=1-Math.min(1,median(intervals.map(x=>Math.abs(x-median(intervals))))/12);let conf=.36+Math.min(.28,(items.length-2)*.07)+cadence.score*.22+regularity*.12+(spread<.05?.08:spread<.15?.04:0);conf=clamp(conf,0,0.98);if(conf<.58)continue;
+      candidates.push({candidate_id:`cand_${idx++}`,merchant_key:g.key,suggested_name:guessName(items),cadence:cadence.label,confidence:conf,typical_amount:med,evidence:items.slice(-12).map(x=>({transaction_id:x.id,date:x.date.toISOString().slice(0,10),amount:x.amount,description:x.description}))});
+    }
+    return candidates.sort((a,b)=>b.confidence-a.confidence);
+  }
+  const serviceRules=[
+    {match:/netflix/i,name:'Netflix',category:'Кино и видео'},
+    {match:/telegram.*premium|premium.*telegram/i,name:'Telegram Premium',category:'Связь'},
+    {match:/youtube.*premium|premium.*youtube|youtube.*music|music.*youtube/i,name:'YouTube Premium / Music',category:'Кино и видео'},
+    {match:/yandex.*plus|яндекс.*плюс|yndx.*plus/i,name:'Яндекс Плюс',category:'Кино и видео'},
+    {match:/spotify/i,name:'Spotify Premium',category:'Музыка'},
+    {match:/vk.*music|music.*vk|vk.*combo/i,name:'VK Музыка / VK Combo',category:'Музыка'},
+    {match:/cloud.*mail|mail.*cloud|облак.*mail/i,name:'Облако Mail.ru',category:'Облако'},
+    {match:/adobe/i,name:'Adobe',category:'Софт'},
+    {match:/кинопоиск/i,name:'Кинопоиск',category:'Кино и видео'},
+    {match:/okko/i,name:'Okko',category:'Кино и видео'}
+  ];
+  function normalizeService(description,fallback){const text=String(description||fallback||'').replace(/[_*.-]+/g,' ').replace(/\s+/g,' ').trim();const rule=serviceRules.find(x=>x.match.test(text));return rule||{name:text.replace(/\b\d{3,}\b/g,'').replace(/\s*[-–—]+\s*$/,'').trim().slice(0,70)||'Регулярный платёж',category:'Другое'} }
+  function guessName(items){return normalizeService(items.map(x=>x.description).join(' ')).name}
+  function normalizeSubscription(subscription){const service=normalizeService(subscription.evidence?.map(e=>e.description).join(' '),subscription.name||subscription.merchant_key);return {...subscription,name:service.name,category:service.category,typical_amount:Math.abs(Number(subscription.typical_amount||0)),evidence:(subscription.evidence||[]).map(e=>({...e,amount:Math.abs(Number(e.amount||0))})),active:subscription.active!==false}}
+
+  async function analyzeTransactions(){
+    progress(48,'Ищу повторяемость и стабильность суммы…');state.candidates=buildCandidates(state.transactions);$('#kpiCandidates').textContent=state.candidates.length;
+    if(!state.candidates.length){state.subscriptions=[];progress(100,'Повторяющиеся подписки не найдены');renderAll();toast('В файле не найдено уверенных подписок');return}
+    progress(68,`Найдено кандидатов: ${state.candidates.length}. Проверяю данные…`);
+    let ai=null;try{const r=await fetch('/api/deepseek/validate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({candidates:state.candidates})});if(!r.ok)throw new Error('AI недоступен');ai=await r.json()}catch(e){console.warn(e)}
+    const byId=new Map(state.candidates.map(c=>[c.candidate_id,c]));let result=[];
+    if(ai?.subscriptions){state.aiMode=ai.mode||'local';for(const a of ai.subscriptions){const c=byId.get(a.candidate_id);if(!c||a.is_subscription!==true)continue;result.push(normalizeSubscription({...c,name:a.name||c.suggested_name,category:a.category||'Другое',reason:a.reason||'',confidence:clamp(c.confidence+Number(a.confidence_adjustment||0),0,0.99),source:'Проверено'}))}}
+    else{state.aiMode='local';result=state.candidates.map(c=>normalizeSubscription({...c,reason:'Кандидат подтверждён детерминированной повторяемостью.',source:'Локальный алгоритм'}))}
+    state.subscriptions=result;progress(100,`Готово: подтверждено ${result.length}`);renderAll();toast(`Анализ завершён: ${result.length} подписок`);
+  }
+
+  function renderAll(){renderKpi();renderTable();renderCharts();renderHealth();$('#sourceInfo').textContent=state.fileName?`${state.fileName} · ${state.transactions.length} транзакций · проверка по выписке`:'Файл ещё не загружен'}
+  function activeSubs(){return state.subscriptions.filter(s=>s.active!==false&&!state.cancelled.has(s.candidate_id))}
+  function cancelSubscription(id){state.pendingCancellation=id;openLetter(id)}
+  function openBulkCancellation(ids){state.pendingCancellation=ids.join(',');$('#modalEyebrow').textContent='Отмена подписок';$('#modalTitle').textContent='Отменить рекомендуемые подписки';$('#modalBody').innerHTML=`<div class="trust-box">Будут отменены все подписки из списка рекомендаций.</div><div class="insight-list">${ids.map(id=>{const s=state.subscriptions.find(x=>x.candidate_id===id);return s?`<div class="insight"><strong>${escapeHtml(s.name)}</strong><span>${money(s.typical_amount)}/мес</span></div>`:''}).join('')}</div><label data-confirm-bulk style="display:flex;align-items:center;gap:9px;margin-top:16px;cursor:pointer"><input type="checkbox" id="bulkCancelConfirm" aria-label="Подтвердить отмену всех подписок"> Подтвердить отмену всех подписок</label>`;$('#modal').classList.add('open')}
+  function confirmCancellation(){const id=state.pendingCancellation;const s=state.subscriptions.find(x=>x.candidate_id===id);if(!s||state.cancelled.has(id))return;state.cancelled.add(id);s.active=false;state.pendingCancellation='';closeModal();renderAll();toast('Подписка успешно отменена')}
+  function confirmBulkCancellation(){const ids=state.pendingCancellation.split(',').filter(Boolean);ids.forEach(id=>{const s=state.subscriptions.find(x=>x.candidate_id===id);if(s){state.cancelled.add(id);s.active=false}});state.pendingCancellation='';closeModal();renderAll();toast('Подписки успешно отменены')}
+  function filteredSubs(){return activeSubs().filter(s=>state.filter==='over'?s.typical_amount>500:true)}
+  function renderKpi(){const total=activeSubs().reduce((a,s)=>a+s.typical_amount,0);$('#heroCount').textContent=activeSubs().length;$('#kpiMonthly').textContent=money(total);$('#kpiYearly').textContent=money(total*12);$('#kpiCandidates').textContent=state.candidates.length;$('#kpiTransactions').textContent=state.transactions.length;$('#kpiConfidence').textContent=activeSubs().length?`${Math.round(activeSubs().reduce((a,s)=>a+s.confidence,0)/activeSubs().length*100)}%`:'0%'}
+  function renderTable(){
+    const list = filteredSubs();
+    $('#resultsEmpty').classList.toggle('hidden', list.length > 0);
+    $('#resultsArea').classList.toggle('hidden', list.length === 0);
+    $('#subsBody').innerHTML = list.map(s => `
+      <tr>
+        <td>
+          <div class="merchant">${escapeHtml(s.name)}</div>
+          <div class="submeta">${escapeHtml(s.category||'Другое')} · ${s.evidence.length} списаний</div>
+        </td>
+        <td>${escapeHtml(s.cadence)}</td>
+        <td><strong>${money(s.typical_amount)}</strong></td>
+        <td>
+          <div class="row-actions">
+            <button class="mini" data-evidence="${s.candidate_id}" title="Доказательства"><i class="fa-solid fa-eye"></i></button>
+            <button class="mini" data-cancel="${s.candidate_id}" title="Подготовить письмо для отписки"><i class="fa-solid fa-envelope"></i></button>
+          </div>
+        </td>
+      </tr>`).join('');
+    $$('[data-evidence]').forEach(b=>b.onclick=()=>openEvidence(b.dataset.evidence));
+  }
+  function renderFullList(){const el=$('#fullList');const list=activeSubs();if(!list.length){el.innerHTML='<div class="results-empty" style="min-height:160px">Нет активных подписок</div>';return}el.innerHTML=list.map(s=>`<div class="insight"><div style="display:flex;justify-content:space-between;gap:14px"><div><strong>${escapeHtml(s.name)}</strong><span>${escapeHtml(s.cadence)} · ${s.evidence.length} подтверждающих транзакций · ${Math.round(s.confidence*100)}%</span></div><div style="font-weight:900">${money(s.typical_amount)} <button class="btn ghost small" data-cancel="${s.candidate_id}">Отменить</button></div></div></div>`).join('');$$('[data-cancel]').forEach(b=>b.onclick=()=>cancelSubscription(b.dataset.cancel))}
+
+  function chartColors(){return ['#21a038','#48a7ff','#ff8a2a','#8d73ff','#52d3c4','#ff5b68','#b8d43a','#d890e8']}
+  function destroyChart(k){if(state.charts[k]){state.charts[k].destroy();delete state.charts[k]}}
+  function chartText(){return getComputedStyle(document.body).getPropertyValue('--text').trim()||'#fff'}
+  function chartGrid(){return getComputedStyle(document.body).getPropertyValue('--line').trim()||'rgba(255,255,255,.08)'}
+  function renderCharts(){['category','top','monthly','cadence'].forEach(destroyChart);const text=chartText(),grid=chartGrid(),colors=chartColors();
+    const subs=activeSubs();const cat={};subs.forEach(s=>cat[s.category||'Другое']=(cat[s.category||'Другое']||0)+s.typical_amount);state.charts.category=new Chart($('#categoryChart'),{type:'doughnut',data:{labels:Object.keys(cat),datasets:[{data:Object.values(cat),backgroundColor:colors,borderWidth:0,hoverOffset:8}]},options:{maintainAspectRatio:false,cutout:'66%',plugins:{legend:{position:'bottom',labels:{color:text,usePointStyle:true,boxWidth:8}}}}});
+    const top=[...subs].sort((a,b)=>b.typical_amount-a.typical_amount).slice(0,7);state.charts.top=new Chart($('#topChart'),{type:'bar',data:{labels:top.map(s=>s.name),datasets:[{data:top.map(s=>s.typical_amount),backgroundColor:colors[0],borderRadius:8}]},options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{color:text},grid:{color:grid}},y:{ticks:{color:text},grid:{display:false}}}}});
+    const monthly={};subs.forEach(s=>s.evidence.forEach(e=>{const m=e.date.slice(0,7);monthly[m]=(monthly[m]||0)+e.amount}));const months=Object.keys(monthly).sort();state.charts.monthly=new Chart($('#monthlyChart'),{type:'line',data:{labels:months,datasets:[{label:'Подписки, ₽',data:months.map(m=>monthly[m]),borderColor:colors[0],backgroundColor:'rgba(33,160,56,.12)',fill:true,tension:.38,pointRadius:3}]},options:{maintainAspectRatio:false,plugins:{legend:{labels:{color:text}}},scales:{x:{ticks:{color:text},grid:{display:false}},y:{beginAtZero:true,ticks:{color:text},grid:{color:grid}}}}});
+    const cad={};subs.forEach(s=>cad[s.cadence]=(cad[s.cadence]||0)+1);state.charts.cadence=new Chart($('#cadenceChart'),{type:'bar',data:{labels:Object.keys(cad),datasets:[{data:Object.values(cad),backgroundColor:colors.slice(1),borderRadius:8}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:text},grid:{display:false}},y:{beginAtZero:true,ticks:{color:text,precision:0},grid:{color:grid}}}}})}
+
+  function renderInsights(){const el=$('#insightList');if(!state.subscriptions.length){el.innerHTML='<div class="insight"><strong>Нет анализа</strong><span>Загрузите выписку, чтобы получить объяснения.</span></div>';return}el.innerHTML=state.subscriptions.slice(0,8).map(s=>`<div class="insight"><strong>${escapeHtml(s.name)} · ${money(s.typical_amount)}</strong><span>${escapeHtml(s.reason||`Повторяемость: ${s.cadence}, подтверждений: ${s.evidence.length}.`)}</span></div>`).join('');
+  }
+  function renderHealth(){const budget=Math.max(0,Number($('#budgetInput')?.value||1500)),active=activeSubs(),total=active.reduce((a,s)=>a+Math.abs(Number(s.typical_amount||0)),0);if(!active.length){$('#healthRing').textContent='—';$('#healthTitle').textContent='Нет данных';$('#healthText').textContent='Введите бюджет и загрузите выписку для расчёта.';$('#miniTimeline').innerHTML='';$('#budgetRecommendations').innerHTML='';return}const difference=budget-total;const score=budget===0?(total===0?100:0):Math.round(clamp((budget-total)/budget*100,0,100));$('#healthRing').textContent=`${score}%`;$('#healthRing').style.borderColor=score>70?'var(--green)':score>45?'var(--orange)':'var(--red)';$('#healthTitle').textContent=difference>=0?'Бюджет соблюдён':'Бюджет превышен';$('#healthText').textContent=`Активные подписки: ${money(total)}/мес. ${difference>=0?`Остаток: ${money(difference)}.`:`Превышение: ${money(Math.abs(difference))}.`}`;const vals=active.flatMap(s=>s.evidence).map(e=>Math.abs(Number(e.amount||0))).slice(-18);const max=Math.max(...vals,1);$('#miniTimeline').innerHTML=vals.map(v=>`<div class="bar" title="${money(v)}" style="height:${Math.max(8,v/max*100)}%"></div>`).join('');const recommendations=[];let reduction=0;for(const s of [...active].sort((a,b)=>b.typical_amount-a.typical_amount)){if(total-reduction<=budget)break;recommendations.push(s);reduction+=Math.abs(Number(s.typical_amount||0))}$('#budgetRecommendations').innerHTML=difference>=0?'<div class="insight"><strong>Отменять подписки не требуется</strong><span>Текущие активные подписки укладываются в выбранный бюджет.</span></div>':`<div class="insight"><strong>Чтобы уложиться в бюджет, рассмотрите отмену:</strong>${recommendations.map(s=>`<div style="margin-top:9px"><span>${escapeHtml(s.name)} · ${money(s.typical_amount)}/мес</span></div>`).join('')}<button class="btn ghost small" data-bulk-cancel="${recommendations.map(s=>s.candidate_id).join(',')}" style="margin-top:14px"><i class="fa-solid fa-ban"></i> Отменить все</button></div>`;$$('[data-cancel]').forEach(b=>b.onclick=()=>cancelSubscription(b.dataset.cancel))}
+
+  function openEvidence(id){const s=state.subscriptions.find(x=>x.candidate_id===id);if(!s)return;$('#modalEyebrow').textContent='Доказательства из файла';$('#modalTitle').textContent=s.name;$('#modalBody').innerHTML=`<div class="trust-box" style="margin:0 0 14px"><strong>Подтверждение по выписке:</strong> каждая строка ниже пришла из загруженного файла.</div>${s.evidence.map(e=>`<div class="evidence-item"><div>${escapeHtml(e.date)}</div><div><strong>${money(e.amount)}</strong></div><div>${escapeHtml(e.description)}</div></div>`).join('')}`;$('#modal').classList.add('open')}
+  function openLetter(id){const s=state.subscriptions.find(x=>x.candidate_id===id);if(!s)return;state.pendingCancellation=id;const text=`Здравствуйте!\n\nПрошу отключить подписку/регулярное списание «${s.name}». В моей банковской выписке обнаружены повторяющиеся списания примерно по ${money(s.typical_amount)} (${s.cadence}).\n\nПожалуйста, подтвердите отключение автопродления и отсутствие будущих списаний.\n\nС уважением,\n[Ваше имя]`;$('#modalEyebrow').textContent='Отмена подписки';$('#modalTitle').textContent=`Отписка: ${s.name}`;$('#modalBody').innerHTML=`<div class="codebox">${escapeHtml(text)}</div><button class="btn primary" id="copyLetter" style="margin-top:14px"><i class="fa-solid fa-copy"></i> Скопировать письмо</button><label data-confirm-cancel style="display:flex;align-items:center;gap:9px;margin-top:16px;cursor:pointer"><input type="checkbox" id="letterSent" aria-label="Подтвердить отмену подписки"> Подтвердить отмену подписки</label>`;$('#modal').classList.add('open');$('#copyLetter').onclick=()=>navigator.clipboard.writeText(text).then(()=>toast('Письмо скопировано'))}
+  function closeModal(){$('#modal').classList.remove('open')}
+  function exportJson(){const blob=new Blob([JSON.stringify({file:state.fileName,transactions_read:state.transactions.length,candidates:state.candidates.length,subscriptions:state.subscriptions},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='subscriptions-analysis.json';a.click();URL.revokeObjectURL(a.href)}
+
+  function loadDemo(){
+    const rows=[
+      ['05.02.2026','-299','YANDEX PLUS'],['07.02.2026','-899','NETFLIX.COM'],['11.02.2026','-1400','Пятерочка 127'],['05.03.2026','-299','YNDX PLUS'],['07.03.2026','-899','NETFLIX COM'],['09.03.2026','-730','Такси'],['05.04.2026','-299','YANDEX*PLUS'],['07.04.2026','-899','NETFLIX.COM'],['13.04.2026','-2400','Перевод Ивану'],['05.05.2026','-299','YANDEX PLUS'],['07.05.2026','-899','NETFLIX.COM'],['18.05.2026','45000','Зачисление зарплаты'],['05.06.2026','-299','YNDX PLUS'],['07.06.2026','-899','NETFLIX COM'],['10.06.2026','-499','CLOUD MAIL RU'],['05.07.2026','-299','YANDEX*PLUS'],['07.07.2026','-899','NETFLIX.COM'],['10.07.2026','-499','CLOUD.MAIL.RU'],['05.08.2026','-299','YANDEX PLUS'],['07.08.2026','-899','NETFLIX.COM'],['10.08.2026','-499','CLOUD MAIL RU']
+    ];state.cancelled.clear();state.fileName='demo_statement.csv';state.transactions=rows.map((r,i)=>makeTx(i,parseDate(r[0]),parseMoney(r[1]),r[2],parseMoney(r[1])<0));analyzeTransactions();go('scanner')
+  }
+
+  init();
+</script>
+</body>
+</html>
