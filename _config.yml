@@ -1,0 +1,12 @@
+source: .
+destination: _site
+theme: jekyll-theme-primer
+
+# Exclude files from build
+exclude:
+  - .env
+  - .env.example
+  - .gitignore
+  - node_modules
+  - package.json
+  - server.js
