@@ -10,3 +10,8 @@ exclude:
   - node_modules
   - package.json
   - server.js
+  - README.md
+
+# Disable Jekyll processing to keep existing index.html
+keep_files:
+  - index.html
